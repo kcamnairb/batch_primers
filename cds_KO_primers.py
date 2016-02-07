@@ -54,7 +54,7 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
     files = (pyrg_f, ptra_f)
     for f in files:
         f.write(','.join(['primer name','primer sequence','penalty', 'product size'])+'\n')
-    for gene in coord[:10]:
+    for gene in coord:
         try:
             print(gene.name)
             if gene.min_coord - 1400  > 0 and gene.max_coord + 1400 < len(fasta_dict[gene.chrom]) and gene.max_coord - gene.min_coord > 200:

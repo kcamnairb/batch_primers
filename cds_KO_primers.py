@@ -55,7 +55,6 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
     for f in files:
         f.write(','.join(['primer name','primer sequence','penalty', 'product size'])+'\n')
     for gene in coord[:10]:
-
         try:
             print(gene.name)
             if gene.min_coord - 1400  > 0 and gene.max_coord + 1400 < len(fasta_dict[gene.chrom]) and gene.max_coord - gene.min_coord > 200:
@@ -82,32 +81,31 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
                     },
                     {'PRIMER_PRODUCT_SIZE_RANGE' : [nested_range]})
                 (nest['PRIMER_RIGHT_0_SEQUENCE'], nest['PRIMER_LEFT_0_SEQUENCE'])
-                #introns_in_deletion = [intron for intron in gene.introns if intron[0] > left['PRIMER_RIGHT_0'][0] and intron[1] < right['PRIMER_LEFT_0'][0]]
-                #print(gene.name, introns_in_deletion)
-                #if introns_in_deletion:
-                #    pprint(introns_in_deletion)
-                #    qpcr = bindings.designPrimers({
-                #        'SEQUENCE_ID': gene.name,
-                #        'SEQUENCE_TEMPLATE': str(fasta_dict[gene.chrom].seq),
-                #        'SEQUENCE_INCLUDED_REGION': [left['PRIMER_RIGHT_0'][0], right['PRIMER_LEFT_0'][0]-left['PRIMER_RIGHT_0'][0]],
-                #        'SEQUENCE_TARGET' : [[x[0],x[1]-x[0]] for x in gene.introns],
-                #        'SEQUENCE_PRIMER_PAIR_OK_REGION_LIST':[[x[0]-100, 63, x[1]+37, 63] for x in introns_in_deletion],
-                #        },
-                #        {'PRIMER_PRODUCT_SIZE_RANGE': [[74,max([x[1]-x[0] for x in introns_in_deletion])+75]]})
-                #else:
-                #    qpcr = bindings.designPrimers({
-                #        'SEQUENCE_ID': gene.name,
-                #        'SEQUENCE_TEMPLATE': str(fasta_dict[gene.chrom].seq),
-                #        'SEQUENCE_INCLUDED_REGION': [gene.min_coord, gene.max_coord-gene.min_coord],
-                #        'SEQUENCE_EXCLUDED_REGION': gene.introns
-                #        },
-                #        {'PRIMER_PRODUCT_SIZE_RANGE': [75, 150]})
+                introns_in_deletion = [intron for intron in gene.introns if intron[0] > left['PRIMER_RIGHT_0'][0] and intron[1] < right['PRIMER_LEFT_0'][0]]
+                print(gene.name, introns_in_deletion)
+                if introns_in_deletion:
+                    qpcr = bindings.designPrimers({
+                        'SEQUENCE_ID': gene.name,
+                        'SEQUENCE_TEMPLATE': str(fasta_dict[gene.chrom].seq),
+                        'SEQUENCE_INCLUDED_REGION': [left['PRIMER_RIGHT_0'][0], right['PRIMER_LEFT_0'][0]-left['PRIMER_RIGHT_0'][0]],
+                        'SEQUENCE_TARGET' : [[x[0],x[1]-x[0]] for x in gene.introns],
+                        'SEQUENCE_PRIMER_PAIR_OK_REGION_LIST':[[x[0]-100, 100, x[1], 100] for x in introns_in_deletion],
+                        },
+                        {'PRIMER_PRODUCT_SIZE_RANGE': [[74,max([x[1]-x[0] for x in introns_in_deletion])+75]]})
+                else:
+                    qpcr = bindings.designPrimers({
+                        'SEQUENCE_ID': gene.name,
+                        'SEQUENCE_TEMPLATE': str(fasta_dict[gene.chrom].seq),
+                        'SEQUENCE_INCLUDED_REGION': [gene.min_coord, gene.max_coord-gene.min_coord],
+                        'SEQUENCE_EXCLUDED_REGION': gene.introns
+                        },
+                        {'PRIMER_PRODUCT_SIZE_RANGE': [75, 150]})
                 #(qpcr['PRIMER_RIGHT_0_SEQUENCE'], qpcr['PRIMER_LEFT_0_SEQUENCE'])
                 #pprint(left)
                 #pprint(right)
                 #pprint(nest)
             else: continue
-        except KeyError as e:
+        except (KeyError, OSError) as e:
             traceback.print_exc()
             genes_with_errors.append(gene.name)
             pprint(gene.name, genes_with_errors_f)
@@ -123,7 +121,7 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
             elif gene.strand == '-':
                 gff_f.write('\t'.join([gene.chrom,'primer3', forward_primer,str(right['PRIMER_LEFT_0'][0]+1),str(right['PRIMER_LEFT_0'][0]+right['PRIMER_LEFT_0'][1]),str(right['PRIMER_LEFT_0_PENALTY']),'+','.','Name='+gene.name+'-5R'])+'\n')
                 gff_f.write('\t'.join([gene.chrom,'primer3', reverse_primer,str(right['PRIMER_RIGHT_0'][0]+2-right['PRIMER_RIGHT_0'][1]),str(right['PRIMER_RIGHT_0'][0]+1),str(right['PRIMER_RIGHT_0_PENALTY']),'-','.','Name='+gene.name+'-5F'])+'\n')
-                gff_f.write('\t'.join([gene.chrom,'primer3', forward_primer,str(left['PRIMER_LEFT_0'][0]+1),str(left['PRIMER_LEFT_0'][0]+left['PRIMER_LEFT_0'][1]),str(left['PRIMER_LEFT_0_PENALTY']),'+','.','Name='+gene.name+'-3F'])+'\n')
+                gff_f.write('\t'.join([gene.chrom,'primer3', forward_primer,str(left['PRIMER_LEFT_0'][0]+1),str(left['PRIMER_LEFT_0'][0]+left['PRIMER_LEFT_0'][1]),str(left['PRIMER_LEFT_0_PENALTY']),'+','.','Name='+gene.name+'-3R'])+'\n')
                 gff_f.write('\t'.join([gene.chrom,'primer3', reverse_primer,str(left['PRIMER_RIGHT_0'][0]+2-left['PRIMER_RIGHT_0'][1]),str(left['PRIMER_RIGHT_0'][0]+1),str(left['PRIMER_RIGHT_0_PENALTY']),'-','.','Name='+gene.name+'-3F'])+'\n')
                 gff_f.write('\t'.join([gene.chrom,'primer3', forward_primer,str(nest['PRIMER_LEFT_0'][0]+1),str(nest['PRIMER_LEFT_0'][0]+nest['PRIMER_LEFT_0'][1]),str(nest['PRIMER_LEFT_0_PENALTY']),'+','.','Name='+gene.name+'-nestR'])+'\n')
                 gff_f.write('\t'.join([gene.chrom,'primer3', reverse_primer,str(nest['PRIMER_RIGHT_0'][0]+2-nest['PRIMER_RIGHT_0'][1]),str(nest['PRIMER_RIGHT_0'][0]+1),str(nest['PRIMER_RIGHT_0_PENALTY']),'-','.','Name='+gene.name+'-nestF'])+'\n')
@@ -144,10 +142,18 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
                     f.write(','.join([gene.name+'-nestF', nest['PRIMER_LEFT_0_SEQUENCE'], str(nest['PRIMER_LEFT_0_PENALTY']), str(nest['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                     f.write(','.join([gene.name+'-nestR', nest['PRIMER_RIGHT_0_SEQUENCE'], str(nest['PRIMER_RIGHT_0_PENALTY']), str(nest['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                     f.write(','.join([gene.name+'-5F-3R KO', '', '', str(left['PRIMER_PAIR_0_PRODUCT_SIZE'] + insert_size + right['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
-                    f.write(','.join([gene.name+'-5F-3R WT', '', '', str(right['PRIMER_RIGHT_0'][0] -  left['PRIMER_LEFT_0'][0])])+'\n')
-                    #f.write(','.join([gene.name+'-qF', qpcr['PRIMER_LEFT_0_SEQUENCE'], str(qpcr['PRIMER_LEFT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
-                    #f.write(','.join([gene.name+'-qR', qpcr['PRIMER_RIGHT_0_SEQUENCE'], str(qpcr['PRIMER_RIGHT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
-                    
+                    f.write(','.join([gene.name+'-5F-3R WT', '', '', str(right['PRIMER_RIGHT_0'][0] - left['PRIMER_LEFT_0'][0])])+'\n')
+                    if 'PRIMER_RIGHT_0_SEQUENCE' in qpcr and 'PRIMER_LEFT_0_SEQUENCE' in qpcr:
+                        f.write(','.join([gene.name+'-qF', qpcr['PRIMER_LEFT_0_SEQUENCE'], str(qpcr['PRIMER_LEFT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
+                        f.write(','.join([gene.name+'-qR', qpcr['PRIMER_RIGHT_0_SEQUENCE'], str(qpcr['PRIMER_RIGHT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
+                        if introns_in_deletion:
+                            for intron in introns_in_deletion:
+                                if intron[0] > qpcr['PRIMER_LEFT_0'][0] and intron[1] < qpcr['PRIMER_RIGHT_0'][0]:
+                                    overlapping_intron = intron
+                            intron_size = overlapping_intron[1] - overlapping_intron[0]
+                            f.write(','.join([gene.name+'-qF-qR-cDNA', '', '', str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'] - intron_size)])+'\n')
+                        else:
+                            f.write(','.join([gene.name+'-qF-qR-cDNA', '', '', str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                 if gene.strand == '-':
                     f.write(','.join([gene.name+'-5F', right['PRIMER_RIGHT_0_SEQUENCE'], str(right['PRIMER_RIGHT_0_PENALTY']), str(right['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                     f.write(','.join([gene.name+'-5R', overlap5R + right['PRIMER_LEFT_0_SEQUENCE'], str(right['PRIMER_LEFT_0_PENALTY']), str(right['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
@@ -157,6 +163,15 @@ open('genes_with_errors','w') as genes_with_errors_f, open('primers.gff','w') as
                     f.write(','.join([gene.name+'-nestR', nest['PRIMER_LEFT_0_SEQUENCE'], str(nest['PRIMER_LEFT_0_PENALTY']), str(nest['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                     f.write(','.join([gene.name+'-5F-3R KO', '', '', str(left['PRIMER_PAIR_0_PRODUCT_SIZE'] + insert_size + right['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
                     f.write(','.join([gene.name+'-5F-3R WT', '', '', str(right['PRIMER_RIGHT_0'][0] -  left['PRIMER_LEFT_0'][0])])+'\n')
-                    #f.write(','.join([gene.name+'-qF', qpcr['PRIMER_RIGHT_0_SEQUENCE'], str(qpcr['PRIMER_RIGHT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
-                    #f.write(','.join([gene.name+'-qR', qpcr['PRIMER_LEFT_0_SEQUENCE'], str(qpcr['PRIMER_LEFT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
-
+                    if 'PRIMER_RIGHT_0_SEQUENCE' in qpcr and 'PRIMER_LEFT_0_SEQUENCE' in qpcr:
+                        f.write(','.join([gene.name+'-qF', qpcr['PRIMER_RIGHT_0_SEQUENCE'], str(qpcr['PRIMER_RIGHT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
+                        f.write(','.join([gene.name+'-qR', qpcr['PRIMER_LEFT_0_SEQUENCE'], str(qpcr['PRIMER_LEFT_0_PENALTY']), str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
+                        if introns_in_deletion:
+                            for intron in introns_in_deletion:
+                                if intron[0] > qpcr['PRIMER_LEFT_0'][0] and intron[1] < qpcr['PRIMER_RIGHT_0'][0]:
+                                    overlapping_intron = intron
+                            intron_size = overlapping_intron[1] - overlapping_intron[0]
+                            f.write(','.join([gene.name+'-qF-qR-cDNA', '', '', str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'] - intron_size)])+'\n')
+                        else:
+                            f.write(','.join([gene.name+'-qF-qR-cDNA', '', '', str(qpcr['PRIMER_PAIR_0_PRODUCT_SIZE'])])+'\n')
+ 

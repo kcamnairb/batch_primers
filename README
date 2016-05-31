@@ -1,1 +1,2 @@
-Script to make primers for fusion PCR based knockout constructs for all CDS in a given gff file
+ 	cds_KO_primers.py: Script to make primers for fusion PCR based knockout constructs for all CDS in a given gff file
+ 	qpcr_primers_overlapping_exons.py: Script to make RT-qPCR primers that have either a forward or reverse primer that overlaps an exon-exon junction so that gDNA contamination is less likely to be amplified.
